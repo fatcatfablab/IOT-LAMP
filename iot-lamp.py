@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # Control your IOT lamp with MQTT. Bassed on Adafruit example code
 # Peter Hartmann peter@hartmanncomputer.com
 
@@ -9,6 +10,8 @@ import json
 import os
 import subprocess
 import psutil
+import signal
+import opc
 
 # Import Adafruit IO MQTT client.
 from Adafruit_IO import MQTTClient
@@ -19,6 +22,23 @@ ADAFRUIT_IO_USERNAME = sys.argv[1]
 ADAFRUIT_IO_KEY      = sys.argv[2] 
 
 rings_pid = 0
+
+from dotstar import Adafruit_DotStar
+numpixels = 47 # Number of LEDs in strip
+
+# setup fadecandy stuff.  The fadecandy server is already runing on port 7890.
+# We're just telling our program where to look for it.
+opc_client = opc.Client('localhost:7890')
+
+pixels = [ (0,0,0) ] * numpixels
+# Here's how to control the strip from any two GPIO pins:
+datapin  = 23
+clockpin = 24
+# instantiate a strip object
+strip = Adafruit_DotStar(numpixels, datapin, clockpin)
+
+strip.begin()           # Initialize pins for output
+#strip.setBrightness(64) # Limit brightness to ~1/4 duty cycle
 
 # Define callback functions which will be called when certain events happen.
 def connected(client):
@@ -75,32 +95,29 @@ def white_lights(state):
 def rgb_fadeto(red,blue,green):
     for i in range(numpixels):
         pixels[i] = (red, green, blue)
-        client.put_pixels(pixels)
+        opc_client.put_pixels(pixels)
         # uncomment the second client.put_pixels for instantaneous change
 #       client.put_pixels(pixels)
 
 def fadecandy_program(prg):
     global rings_pid
-    print("this is fadecandy_program, call is %s" % prg)
     print("rings_pid is %s" % str(rings_pid))
     if prg == "rings":
-       print("program is rings!!")
        proc =  subprocess.Popen(["/home/pi/fadecandy/examples/cpp/rings"], shell=False, cwd="/home/pi/fadecandy/examples/cpp/",preexec_fn=os.setsid)
        rings_pid = proc.pid
-       print(str(rings_pid))
+       print("rings_pid is now %s" % str(rings_pid))
     if str(prg) == "0":
+       os.killpg(int(rings_pid), signal.SIGTERM)
        try:
           print("killing rings_pid %s" % str(rings_pid))
-          kill(rings_pid)#, signal.SIGKILL)
+          os.killpg(int(rings_pid), signal.SIGTERM)
        except:
-         return str('not running')
+         pass  
        # loop through all fadecandy pixels
        for i in range(numpixels):
             pixels[i] = (0, 0, 0)
-       client.put_pixels(pixels)
+       opc_client.put_pixels(pixels)
        rings_pid = 0 
-       return str('200')
-    print(str(rings_pid))
 
 last = 0
 while True:
