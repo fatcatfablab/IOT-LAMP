@@ -24,7 +24,7 @@ ADAFRUIT_IO_KEY      = sys.argv[2]
 rings_pid = 0
 
 from dotstar import Adafruit_DotStar
-numpixels = 47 # Number of LEDs in strip
+numpixels = 48 # Number of LEDs in strip
 
 # setup fadecandy stuff.  The fadecandy server is already runing on port 7890.
 # We're just telling our program where to look for it.
@@ -62,7 +62,7 @@ def message(client, feed_id, payload):
         print("red value is: %s" % parsed_color['red'])
 
     if feed_id == "iot-lamp.white":
-        white_lights(payload)
+        white_lights(int(payload))
 
     if feed_id == "iot-lamp.util":
         if payload == "shutdown":
