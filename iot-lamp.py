@@ -60,6 +60,7 @@ def message(client, feed_id, payload):
     if feed_id == "iot-lamp.color":
         parsed_color = json.loads(payload)
         print("red value is: %s" % parsed_color['red'])
+        rgb_fadeto(parsed_color['red'],parsed_color['green'],parsed_color['blue'])
 
     if feed_id == "iot-lamp.white":
         white_lights(int(payload))
