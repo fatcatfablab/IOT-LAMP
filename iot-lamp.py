@@ -67,10 +67,15 @@ def message(client, feed_id, payload):
 
     if feed_id == "iot-lamp.util":
         if payload == "shutdown":
+            lamp_off()
             os.system("/usr/bin/sudo /sbin/shutdown -h now") 
 
     if feed_id == "iot-lamp.program":
         fadecandy_program(payload)
+
+    if feed_id == "iot-lamp.util":
+        if payload == "lampoff":
+            lamp_off()
 
 # Create an MQTT client instance.
 client = MQTTClient(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
@@ -107,18 +112,24 @@ def fadecandy_program(prg):
        proc =  subprocess.Popen(["/home/pi/fadecandy/examples/cpp/rings"], shell=False, cwd="/home/pi/fadecandy/examples/cpp/",preexec_fn=os.setsid)
        rings_pid = proc.pid
        print("rings_pid is now %s" % str(rings_pid))
-    if str(prg) == "0":
-       os.killpg(int(rings_pid), signal.SIGTERM)
+    if str(prg) == "0" and rings_pid != 0:
+      # os.killpg(int(rings_pid), signal.SIGTERM)
        try:
           print("killing rings_pid %s" % str(rings_pid))
           os.killpg(int(rings_pid), signal.SIGTERM)
        except:
          pass  
+    if str(prg) == "0":
        # loop through all fadecandy pixels
        for i in range(numpixels):
             pixels[i] = (0, 0, 0)
        opc_client.put_pixels(pixels)
+       opc_client.put_pixels(pixels)
        rings_pid = 0 
+
+def lamp_off():
+    fadecandy_program(0)
+    white_lights(0)
 
 last = 0
 while True:
