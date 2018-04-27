@@ -101,9 +101,9 @@ def white_lights(state):
 def rgb_fadeto(red,blue,green):
     for i in range(numpixels):
         pixels[i] = (red, green, blue)
-        opc_client.put_pixels(pixels)
+    opc_client.put_pixels(pixels)
         # uncomment the second client.put_pixels for instantaneous change
-#       client.put_pixels(pixels)
+#    opc.client.put_pixels(pixels)
 
 def fadecandy_program(prg):
     global rings_pid
