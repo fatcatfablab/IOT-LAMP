@@ -24,7 +24,7 @@ ADAFRUIT_IO_KEY      = sys.argv[2]
 rings_pid = 0
 
 from dotstar import Adafruit_DotStar
-numpixels = 48 # Number of LEDs in strip
+numpixels = 47 # Number of LEDs in strip
 
 # setup fadecandy stuff.  The fadecandy server is already runing on port 7890.
 # We're just telling our program where to look for it.
