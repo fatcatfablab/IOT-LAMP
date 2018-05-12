@@ -12,6 +12,19 @@ import subprocess
 import psutil
 import signal
 import opc
+import atexit
+
+# Register your external Fadecandy programs here
+global ext_prgs
+ext_prgs = {
+        "rings":"/home/pi/fadecandy/examples/cpp/",
+        "double.py":"/home/pi/IOT-LAMP/",
+        }
+
+subprocess_pid = 0
+
+global current_prg
+current_prg = "0"
 
 # Import Adafruit IO MQTT client.
 from Adafruit_IO import MQTTClient
@@ -21,7 +34,6 @@ from Adafruit_IO import MQTTClient
 ADAFRUIT_IO_USERNAME = sys.argv[1] 
 ADAFRUIT_IO_KEY      = sys.argv[2] 
 
-rings_pid = 0
 
 from dotstar import Adafruit_DotStar
 numpixels = 47 # Number of LEDs in strip
@@ -102,37 +114,58 @@ def rgb_fadeto(red,blue,green):
     for i in range(numpixels):
         pixels[i] = (red, green, blue)
     opc_client.put_pixels(pixels)
-        # uncomment the second client.put_pixels for instantaneous change
+#    uncomment the second client.put_pixels for instantaneous change
 #    opc.client.put_pixels(pixels)
 
 def fadecandy_program(prg):
-    global rings_pid
-    print("rings_pid is %s" % str(rings_pid))
-    if prg == "rings":
-       proc =  subprocess.Popen(["/home/pi/fadecandy/examples/cpp/rings"], shell=False, cwd="/home/pi/fadecandy/examples/cpp/",preexec_fn=os.setsid)
-       rings_pid = proc.pid
-       print("rings_pid is now %s" % str(rings_pid))
-    if str(prg) == "0" and rings_pid != 0:
-      # os.killpg(int(rings_pid), signal.SIGTERM)
-       try:
-          print("killing rings_pid %s" % str(rings_pid))
-          os.killpg(int(rings_pid), signal.SIGTERM)
-       except:
-         pass  
+    global subprocess_pid
+    global current_prg
+    print("subprocess_pid is %s" % str(subprocess_pid))
+    # check for running prg and change of state
+    if current_prg != "0" and prg != current_prg:
+        kill_prg(subprocess_pid)
+    if prg in ext_prgs:
+       proc =  subprocess.Popen([ext_prgs[prg]+ prg], shell=False, cwd=ext_prgs[prg],preexec_fn=os.setsid)
+       subprocess_pid = proc.pid
+       print("subprocess_pid is now %s" % str(subprocess_pid))
+       current_prg = prg
+       print("current program is %s" % str(prg))
     if str(prg) == "0":
-       # loop through all fadecandy pixels
-       for i in range(numpixels):
-            pixels[i] = (0, 0, 0)
-       opc_client.put_pixels(pixels)
-       opc_client.put_pixels(pixels)
-       rings_pid = 0 
+        if subprocess_pid < 0:
+            kill_prg(subprocess_pid)
+            subprocess_pid = 0
+        current_prg = "0"
+        darken_fadecandy()
+
+def kill_prg(pid):
+   try:
+      print("killing subprocess_pid %s" % str(pid))
+      os.killpg(int(pid), signal.SIGTERM)
+      global subprocess_pid
+      subprocess_pid = 0
+   except:
+      pass
+
+def darken_fadecandy():
+   # loop through all fadecandy pixels
+   for i in range(numpixels):
+        pixels[i] = (0, 0, 0)
+   opc_client.put_pixels(pixels)
+   opc_client.put_pixels(pixels)
 
 def lamp_off():
     fadecandy_program(0)
     white_lights(0)
 
+# Turn off lamp on keybaord interrupt and service stop/restart
+atexit.register(lamp_off)
+signal.signal(signal.SIGTERM, lamp_off)
+
+# hang the script so we can daemonize
 last = 0
 while True:
-       if (time.time() - last) >= 10.0:
-                  last = time.time()
+       if (time.time() - last) >= 1.0:
+           # flush buffers so we get std out in our log file 
+           sys.stdout.flush()
+           last = time.time()
 
