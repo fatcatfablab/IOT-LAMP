@@ -13,12 +13,25 @@ import psutil
 import signal
 import opc
 import atexit
+import socket
+import fcntl
+import struct
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+
+current_ip =  get_ip_address('wlan0')
 
 # Register your external Fadecandy programs here
 global ext_prgs
 ext_prgs = {
         "rings":"/home/pi/fadecandy/examples/cpp/",
-        "double.py":"/home/pi/IOT-LAMP/",
+        "dual.py":"/home/pi/IOT-LAMP/",
         }
 
 subprocess_pid = 0
@@ -99,6 +112,8 @@ client.on_message    = message
 
 # Connect to the Adafruit IO server.
 client.connect()
+print(current_ip)
+client.publish("iot-lamp.wifi-ip", current_ip)
 
 client.loop_background()
 
@@ -106,7 +121,7 @@ client.loop_background()
 
 def white_lights(state):
     # loop through all Dotstar pixels (we treat it the same as an RGB strip)
-    for x in range(0,numpixels):
+    for x in range(0,numpixels-1):
        strip.setPixelColor(x, state,state,state)
     strip.show()
 
