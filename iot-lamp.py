@@ -32,6 +32,7 @@ global ext_prgs
 ext_prgs = {
         "rings":"/home/pi/fadecandy/examples/cpp/",
         "dual.py":"/home/pi/IOT-LAMP/",
+        "fireplace.sh":"/home/pi/IOT-LAMP/",
         }
 
 subprocess_pid = 0
