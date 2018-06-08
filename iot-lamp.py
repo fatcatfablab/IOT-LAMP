@@ -103,6 +103,7 @@ def message(client, feed_id, payload):
         if payload == "lampoff":
             lamp_off()
 
+
 # Create an MQTT client instance.
 client = MQTTClient(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
 
@@ -113,6 +114,8 @@ client.on_message    = message
 
 # Connect to the Adafruit IO server.
 client.connect()
+
+# Publish our NATed ip
 print(current_ip)
 client.publish("iot-lamp.wifi-ip", current_ip)
 
@@ -149,8 +152,6 @@ def fadecandy_program(prg):
     if str(prg) == "0":
         if subprocess_pid < 0:
             kill_prg(subprocess_pid)
-            subprocess_pid = 0
-        current_prg = "0"
         darken_fadecandy()
 
 def kill_prg(pid):
@@ -158,7 +159,9 @@ def kill_prg(pid):
       print("killing subprocess_pid %s" % str(pid))
       os.killpg(int(pid), signal.SIGTERM)
       global subprocess_pid
+      global current_prg
       subprocess_pid = 0
+      current_prg = "0"
    except:
       pass
 
@@ -173,15 +176,25 @@ def lamp_off():
     fadecandy_program(0)
     white_lights(0)
 
-# Turn off lamp on keybaord interrupt and service stop/restart
+#start by turning off lights in case we left them on    
+lamp_off()
+
+def cleanup(arg1, arg2):
+    lamp_off()
+
+# Turn off lamp on service stop/restart
+signal.signal(signal.SIGTERM, cleanup)
 atexit.register(lamp_off)
-signal.signal(signal.SIGTERM, lamp_off)
 
 # hang the script so we can daemonize
 last = 0
+last_ping = 0
 while True:
        if (time.time() - last) >= 1.0:
            # flush buffers so we get std out in our log file 
            sys.stdout.flush()
            last = time.time()
-
+       if (time.time() - last_ping) >= 120.0:
+           # Keep client from disconnecting from Adafruit.io
+           client.publish("iot-lamp.ping", 1)
+           last_ping = time.time()
