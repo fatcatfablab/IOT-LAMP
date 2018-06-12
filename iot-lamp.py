@@ -16,6 +16,7 @@ import atexit
 import socket
 import fcntl
 import struct
+from pprint import pprint
 
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -194,7 +195,10 @@ while True:
            # flush buffers so we get std out in our log file 
            sys.stdout.flush()
            last = time.time()
-       if (time.time() - last_ping) >= 120.0:
+       if (time.time() - last_ping) >= 30.0:
            # Keep client from disconnecting from Adafruit.io
            client.publish("iot-lamp.ping", 1)
            last_ping = time.time()
+           if client._connected == False:
+               client.connect()
+           #pprint(vars(client))
