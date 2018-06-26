@@ -32,6 +32,7 @@ current_ip =  get_ip_address('wlan0')
 global ext_prgs
 ext_prgs = {
         "rings":"/home/pi/fadecandy/examples/cpp/",
+        "sky":"/home/pi/fadecandy/examples/cpp/",
         "dual.py":"/home/pi/IOT-LAMP/",
         "fireplace.sh":"/home/pi/IOT-LAMP/",
         }
@@ -78,7 +79,6 @@ def connected(client):
 def disconnected(client):
     # Disconnected function will be called when the client disconnects.
     print('Disconnected from Adafruit IO!')
-    sys.exit(1)
 
 def message(client, feed_id, payload):
     # parse all messages
@@ -145,6 +145,7 @@ def fadecandy_program(prg):
     if current_prg != "0" and prg != current_prg:
         kill_prg(subprocess_pid)
     if prg in ext_prgs:
+      # print ext_prgs[prg]
        proc =  subprocess.Popen([ext_prgs[prg]+ prg], shell=False, cwd=ext_prgs[prg],preexec_fn=os.setsid)
        subprocess_pid = proc.pid
        print("subprocess_pid is now %s" % str(subprocess_pid))
