@@ -130,7 +130,7 @@ def white_lights(state):
        strip.setPixelColor(x, state,state,state)
     strip.show()
 
-def rgb_fadeto(red,blue,green):
+def rgb_fadeto(red,green,blue):
     for i in range(numpixels):
         pixels[i] = (red, green, blue)
     opc_client.put_pixels(pixels)
