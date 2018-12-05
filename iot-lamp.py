@@ -72,6 +72,7 @@ strip.begin()           # Initialize pins for output
 def connected(client):
     print('Connected to Adafruit IO!')
     client.subscribe('iot-lamp.color')
+    client.subscribe('iot-lamp.hexcolor')
     client.subscribe('iot-lamp.white')
     client.subscribe('iot-lamp.program')
     client.subscribe('iot-lamp.util')
@@ -88,6 +89,10 @@ def message(client, feed_id, payload):
         parsed_color = json.loads(payload)
         print("red value is: %s" % parsed_color['red'])
         rgb_fadeto(parsed_color['red'],parsed_color['green'],parsed_color['blue'])
+
+    if feed_id == "iot-lamp.hexcolor":
+        (r,g,b) = hex_to_rgb(payload)
+        rgb_fadeto(r,g,b)
 
     if feed_id == "iot-lamp.white":
         white_lights(int(payload))
@@ -130,12 +135,17 @@ def white_lights(state):
        strip.setPixelColor(x, state,state,state)
     strip.show()
 
-def rgb_fadeto(red,blue,green):
+def rgb_fadeto(red,green,blue):
     for i in range(numpixels):
         pixels[i] = (red, green, blue)
     opc_client.put_pixels(pixels)
 #    uncomment the second client.put_pixels for instantaneous change
 #    opc.client.put_pixels(pixels)
+
+def hex_to_rgb(value):
+     value = value.lstrip('#')
+     lv = len(value)
+     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
 def fadecandy_program(prg):
     global subprocess_pid
